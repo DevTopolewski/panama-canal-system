@@ -1,3 +1,4 @@
+import os
 import json
 from vessel_logic import check_vessel_status, calculate_vessel_fee, update_price, Vessel
 from data_manager import save_to_log, process_batch, generate_report, generate_final_report
@@ -6,6 +7,10 @@ from data_manager import save_to_log, process_batch, generate_report, generate_f
 session_total_revenue = 0
 session_ships_count = 0
 active_fleet = []
+
+# --- SEKCJA KONFIGURACJI ---
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # --- FUNKCJA 6: MENU GŁÓWNE ---
 
@@ -31,9 +36,9 @@ def main_menu():
         choice = input("\nWybierz opcję (1-8): ")
 
         if choice == "1":
-            json_path = "/Users/pedro/Desktop/ships.json"
+            JSON_PATH = os.path.join(BASE_DIR, "ships.json")
             try:
-                with open(json_path, "r", encoding="utf-8") as file:
+                with open(JSON_PATH, "r", encoding="utf-8") as file:
                     night_vessels = json.load(file)
                     rev, count = process_batch(night_vessels)
                     session_total_revenue += rev

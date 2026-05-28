@@ -1,11 +1,16 @@
+import os
 from datetime import datetime # Pobieramy narzędzie do obsługi dat i czasu
 from vessel_logic import check_vessel_status, calculate_vessel_fee, Vessel
+
+# --- SEKCJA KONFIGURACJI ---
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # --- FUNKCJA: ZAPISYWANIE DANYCH W PLIKU TEKSTOWYM ---
 def save_to_log(name: str, dwt: int, status: str, fee: int):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    path = "/Users/pedro/Desktop/ProgramKanał/canal_log.txt"
-    with open(path, "a", encoding="utf-8") as file:
+    PATH = os.path.join(BASE_DIR, "canal_log.txt")
+    with open(PATH, "a", encoding="utf-8") as file:
         file.write(f"[{now}] | Vessel: {name:<10} | DWT: {dwt:<7} | Status: {status:<19} | Fee: ${fee:>10,}\n")
 
 # --- FUNKCJA: AUTOMATYCZNE LICZENIE Z LISTY ---
@@ -59,10 +64,10 @@ def generate_report(vessel_list):
 # --- FUNKCJA: FINALNY RAPORT STATKÓW DODAWANYCH RĘCZNIE ---
 
 def generate_final_report(fleet):
-    filename = "/Users/pedro/Desktop/ProgramKanał/final_report.txt"
+    FILENAME = os.path.join(BASE_DIR, "final_report.txt")
     now = datetime.now().strftime("%Y-%m-%d")
     try:
-        with open(filename, "w", encoding="utf-8") as f:
+        with open(FILENAME, "w", encoding="utf-8") as f:
             f.write("--- PANAMA CANAL: FINAL DUTY REPORT ---\n")
             f.write(f"Report Generated: [{now}]\n")
             f.write("-" * 40 + "\n\n")
@@ -81,6 +86,6 @@ def generate_final_report(fleet):
             f.write(f"TOTAL REVENUE: ${total_revenue:,}\n")
             f.write("-" * 40 + "\n")
             f.write("End of Report.\n")
-        print(f"\n[SUCCESS]: Report saved to {filename}")
+        print(f"\n[SUCCESS]: Report saved to {FILENAME}")
     except Exception as e:
         print(f"\n[ERROR]: Could not generate report: {e}")

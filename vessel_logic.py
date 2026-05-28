@@ -1,6 +1,12 @@
-import json
 import os
-CONFIG_FILE = "/Users/pedro/Desktop/config.json"
+import json
+
+# --- SEKCJA KONFIGURACJI ---
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
+
+# --- OBIEKT ---
 
 class Vessel:
     def __init__(self, name: str, dwt: int):
