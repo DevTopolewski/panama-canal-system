@@ -6,7 +6,25 @@ from vessel_logic import check_vessel_status, calculate_vessel_fee, Vessel
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# --- FUNKCJA: PRZESZUKIWANIE PLIKU W CELU ZLOKALIZOWANIA JEDNOSTKI ---
+
+def search_in_logs(ship_name):
+    PATH = os.path.join(BASE_DIR, "canal_log.txt")
+    print(f"\nSearching for: {ship_name} ...\n")
+    found = False
+    try:
+        with open(PATH, "r", encoding="utf-8") as file:
+            for line in file:
+                if ship_name.lower() in line.lower():
+                    print(line.strip())
+                    found = True
+        if not found:
+            print(f"No records found for '{ship_name}'.")
+    except FileNotFoundError:
+        print("Log file does not exist yet. Process some vessels first!")
+
 # --- FUNKCJA: ZAPISYWANIE DANYCH W PLIKU TEKSTOWYM ---
+
 def save_to_log(name: str, dwt: int, status: str, fee: int):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     PATH = os.path.join(BASE_DIR, "canal_log.txt")

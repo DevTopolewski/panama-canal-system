@@ -1,7 +1,7 @@
 import os
 import json
 from vessel_logic import check_vessel_status, calculate_vessel_fee, update_price, Vessel
-from data_manager import save_to_log, process_batch, generate_report, generate_final_report
+from data_manager import save_to_log, process_batch, generate_report, generate_final_report, search_in_logs
 
 # Counters 
 session_total_revenue = 0
@@ -30,10 +30,11 @@ def main_menu():
         print("4. Wyświetl liste statków dodanych manualnie")
         print("5. Zamknij system")
         print("6. Aktualizaja stawek")
-        print("7. Usuń statek dodany ręcznie z listy.")
-        print("8. Save final daily report in the file.")
+        print("7. Odszukaj statek w liście.")
+        print("8. Usuń statek dodany ręcznie z listy.")
+        print("9. Save final daily report in the file.")
 
-        choice = input("\nWybierz opcję (1-8): ")
+        choice = input("\nWybierz opcję (1-9): ")
 
         if choice == "1":
             JSON_PATH = os.path.join(BASE_DIR, "ships.json")
@@ -117,6 +118,10 @@ def main_menu():
                 print("\nBłąd: Price must be a numer!")
 
         elif choice == "7":
+            name_to_find = input("\nEnter vessel name to search in history: ")
+            search_in_logs(name_to_find)
+
+        elif choice == "8":
             name_to_remove = input("\nEnter the name of the vessel to remove: ")
             initial_count = len(active_fleet)
             active_fleet = [s for s in active_fleet if s.name.lower() != name_to_remove.lower()]
@@ -125,7 +130,7 @@ def main_menu():
             else:
                 print(f"\nERROR: Vessel '{name_to_remove}' not found in current fleet.")
 
-        elif choice == "8":
+        elif choice == "9":
             generate_final_report(active_fleet)
                 
         else:
