@@ -4,3 +4,4 @@
 [2026-05-28 09:22:17] | Vessel: Viking     | DWT: 95000   | Status: PREMIUM             | Fee: $    12,000
 [2026-05-28 09:22:17] | Vessel: Goliath    | DWT: 135000  | Status: PREMIUM             | Fee: $    12,000
 [2026-05-28 09:22:17] | Vessel: Pacific    | DWT: 55000   | Status: PREMIUM             | Fee: $    12,000
+[2026-06-05 16:23:39] | Vessel: test1      | DWT: 99999   | Status: NEO-PANAMAX         | Fee: $    25,000

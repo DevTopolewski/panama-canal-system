@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox
 # Importujemy Twoje funkcje z pliku vessel_logic.py
@@ -6,6 +7,14 @@ from vessel_logic import check_vessel_status, calculate_vessel_fee
 
 # Ustawiamy katalog bazowy projektu
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# --- FUNKCJA ZAPISU DO PLIKU TEKSTOWEGO ---
+def save_to_log(name: str, dwt: int, status: str, fee: int):
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    PATH = os.path.join(BASE_DIR, "canal_log.txt")
+    with open(PATH, "a", encoding="utf-8") as file:
+        file.write(f"[{now}] | Vessel: {name:<10} | DWT: {dwt:<7} | Status: {status:<19} | Fee: ${fee:>10,}\n")
+
 
 # --- FUNKCJA OBLICZAJĄCA (MÓZG PRZYCISKU) ---
 def process_ship():
@@ -30,6 +39,8 @@ def process_ship():
             result_color = "#cc0000" # Ciemnoczerwony
         else:
             result_color = "#006600" # Ciemnozielony
+             # Jeśli statek przeszedł pomyślnie, zapisujemy go do logu tekstowego
+            save_to_log(name, dwt, status, fee)
         
         # Wyświetlamy wynik na ekranie
         result_label.config(
