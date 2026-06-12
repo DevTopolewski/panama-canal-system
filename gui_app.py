@@ -2,29 +2,60 @@ import os
 from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox
-# Importujemy Twoje funkcje z pliku vessel_logic.py
 from vessel_logic import check_vessel_status, calculate_vessel_fee
 
 # Ustawiamy katalog bazowy projektu i globalną ścieżkę do logów
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE_PATH = os.path.join(BASE_DIR, "canal_log.txt")
 
+# --- FUNKCJA AKTUALIZACJI DASHBOARDU (NOWOŚĆ! 🔥) ---
+def update_dashboard():
+    if not os.path.exists(LOG_FILE_PATH):
+        stats_label.config(text="Obsłużone statki: 0   |   Zarobek: $0")
+        return
+        
+    total_ships = 0
+    total_earnings = 0
+    
+    with open(LOG_FILE_PATH, "r", encoding="utf-8") as file:
+        for line in file:
+            # Interesują nas tylko linijki z opłatami
+            if "Fee:" in line:
+                total_ships += 1
+                
+                # Rozcinamy linijkę za pomocą .split('|')
+                parts = line.split("|")
+                # Ostatnia część to opłata, np. " Fee: $50,000\n"
+                fee_part = parts[-1]
+                
+                # Czyszczenie tekstu, żeby została sama liczba
+                fee_str = fee_part.replace("Fee:", "").replace("$", "").replace(",", "").strip()
+                
+                try:
+                    total_earnings += int(fee_str)
+                except ValueError:
+                    continue # Jeśli coś pójdzie nie tak z tekstem, idź do następnej linii
+
+    # Wyświetlamy zsumowane statystyki z formatowaniem tysięcznym (przecinki)
+    stats_label.config(text=f"Obsłużone statki: {total_ships}   |   Zarobek: ${total_earnings:,}")
+
+
 # --- FUNKCJA ZAPISU DO PLIKU TEKSTOWEGO ---
 def save_to_log(name: str, dwt: int, status: str, fee: int):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(LOG_FILE_PATH, "a", encoding="utf-8") as file:
         file.write(f"[{now}] | Vessel: {name:<10} | DWT: {dwt:<7} | Status: {status:<19} | Fee: ${fee:>10,}\n")
+    # Po każdym zapisie odświeżamy statystyki na ekranie!
+    update_dashboard()
 
 
 # --- FUNKCJA WYSZUKIWANIA W LOGACH ---
 def search_vessel():
-    query = search_entry.get().strip() # Pobieramy szukaną frazę
-    
+    query = search_entry.get().strip()
     if not query:
         messagebox.showwarning("Brak frazy", "Wpisz nazwę statku do wyszukania, Pedro!")
         return
     
-    # Czyszczenie pola tekstowego z poprzednich wyników
     search_results_box.config(state="normal")
     search_results_box.delete("1.0", tk.END)
     
@@ -34,36 +65,31 @@ def search_vessel():
         return
 
     found_entries = []
-    
-    # Przeszukiwanie pliku linia po linii
     with open(LOG_FILE_PATH, "r", encoding="utf-8") as file:
         for line in file:
-            # Szukamy bez względu na małe/duże litery
             if query.lower() in line.lower():
                 found_entries.append(line.strip())
                 
-    # Wyświetlanie wyników w oknie
     if found_entries:
         for entry in found_entries:
             search_results_box.insert(tk.END, entry + "\n\n")
     else:
         search_results_box.insert(tk.END, f"Nie znaleziono statku o nazwie: '{query}'")
         
-    search_results_box.config(state="disabled") # Blokujemy edycję pola przez użytkownika
+    search_results_box.config(state="disabled")
 
 
-# --- FUNKCJA OBLICZAJĄCA ---
+# --- FUNKCJA OBLICZAJĄCA (MÓZG PRZYCISKU) ---
 def process_ship():
     name = name_entry.get()
     dwt_raw = dwt_entry.get()
     
     if not name or not dwt_raw:
-        messagebox.showwarning("Brak danych", "Wypełnij oba pola!")
+        messagebox.showwarning("Brak danych", "Wypełnij oba pola, Pedro!")
         return
         
     try:
         dwt = int(dwt_raw)
-        
         status = check_vessel_status(dwt)
         fee = calculate_vessel_fee(dwt, status)
         
@@ -83,12 +109,11 @@ def process_ship():
 
 # --- TWORZENIE GŁÓWNEGO OKNA ---
 root = tk.Tk()
-root.title("Panama Canal Calculator v2.2")
-root.geometry("400x650") # Zwiększone okno z 400x400 na 400x650, żeby zmieścić wyszukiwarkę
+root.title("Panama Canal Calculator v2.3")
+root.geometry("400x700") # Lekko zwiększone, żeby zmieścić dolny pasek
 
 BG_COLOR = "#FFFFFF"   
 TEXT_COLOR = "#000000" 
-
 root.configure(bg=BG_COLOR)
 
 # --- SEKCJA 1: ODPRAWA STATKÓW ---
@@ -105,29 +130,15 @@ dwt_label.pack(pady=2)
 dwt_entry = tk.Entry(root, width=25, font=("Arial", 12), bg="#F0F0F0", fg="#000000", insertbackground="black")
 dwt_entry.pack(pady=5)
 
-calc_button = tk.Button(
-    root, 
-    text="Odpraw statek 🚢", 
-    font=("Arial", 12, "bold"), 
-    command=process_ship,
-    fg="#000000",
-    highlightbackground=BG_COLOR
-)
+calc_button = tk.Button(root, text="Odpraw statek 🚢", font=("Arial", 12, "bold"), command=process_ship, fg="#000000", highlightbackground=BG_COLOR)
 calc_button.pack(pady=15)
 
-result_label = tk.Label(
-    root, 
-    text="Wpisz dane i kliknij przycisk powyżej.", 
-    font=("Courier", 11, "bold"), 
-    bg=BG_COLOR, 
-    fg="#555555", 
-    justify="left"
-)
+result_label = tk.Label(root, text="Wpisz dane i kliknij przycisk powyżej.", font=("Courier", 11, "bold"), bg=BG_COLOR, fg="#555555", justify="left")
 result_label.pack(pady=10)
 
-# --- LINIA PODZIAŁU SYSTEMU (WIZUALNA) ---
+# --- LINIA PODZIAŁU SYSTEMU ---
 separator = tk.Frame(root, height=2, bd=1, relief="sunken", bg="#CCCCCC")
-separator.pack(fill="x", padx=20, pady=15)
+separator.pack(fill="x", padx=20, pady=10)
 
 # --- SEKCJA 2: WYSZUKIWARKA LOGÓW ---
 search_title = tk.Label(root, text="Wyszukiwarka Logów", font=("Arial", 12, "bold"), bg=BG_COLOR, fg=TEXT_COLOR)
@@ -136,19 +147,20 @@ search_title.pack(pady=5)
 search_entry = tk.Entry(root, width=25, font=("Arial", 12), bg="#F0F0F0", fg="#000000", insertbackground="black")
 search_entry.pack(pady=5)
 
-search_button = tk.Button(
-    root, 
-    text="Szukaj w logach 🔍", 
-    font=("Arial", 12, "bold"), 
-    command=search_vessel, 
-    fg="#000000", 
-    highlightbackground=BG_COLOR
-)
+search_button = tk.Button(root, text="Szukaj w logach 🔍", font=("Arial", 12, "bold"), command=search_vessel, fg="#000000", highlightbackground=BG_COLOR)
 search_button.pack(pady=5)
 
-# Okno tekstowe na wyniki wyszukiwania
-search_results_box = tk.Text(root, width=45, height=6, font=("Courier", 10), bg="#F9F9F9", fg="#000000", state="disabled")
+search_results_box = tk.Text(root, width=45, height=5, font=("Courier", 10), bg="#F9F9F9", fg="#000000", state="disabled")
 search_results_box.pack(pady=10, padx=15)
 
-# Uruchomienie pętli programu
+# --- SEKCJA 3: CZARNY PASEK STATYSTYK (DASHBOARD) ---
+stats_frame = tk.Frame(root, bg="#000000", height=40)
+stats_frame.pack(fill="x", side="bottom")
+
+stats_label = tk.Label(stats_frame, text="Ładowanie statystyk...", font=("Arial", 11, "bold"), bg="#000000", fg="#FFFFFF")
+stats_label.pack(pady=10)
+
+# 🔥 WAŻNE: Odpalamy wyliczenie statystyk od razu przy starcie programu!
+update_dashboard()
+
 root.mainloop()
