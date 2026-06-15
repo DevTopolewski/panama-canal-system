@@ -20,7 +20,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# --- 🔥 NOWA FUNKCJA: DODAWANIE STATKU DO BAZY ---
+# --- NOWA FUNKCJA: DODAWANIE STATKU DO BAZY ---
 def add_vessel(timestamp: str, name: str, dwt: int, status: str, fee: int):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -36,7 +36,7 @@ def add_vessel(timestamp: str, name: str, dwt: int, status: str, fee: int):
     conn.close()
     print(f"Baza danych: Pomyślnie zapisano statek {name}!")
 
-# --- 🔥 NOWOŚĆ: WYCIĄGANIE STATYSTYK Z BAZY ---
+# --- NOWOŚĆ: WYCIĄGANIE STATYSTYK Z BAZY ---
 def get_vessel_stats():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -50,7 +50,7 @@ def get_vessel_stats():
     total_earnings = result[1] if result[1] else 0
     return total_ships, total_earnings
 
-# --- 🔥 NOWOŚĆ: WYSZUKIWANIE W BAZIE ---
+# --- NOWOŚĆ: WYSZUKIWANIE W BAZIE ---
 def search_vessels(query: str):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -61,6 +61,22 @@ def search_vessels(query: str):
         FROM canal_logs 
         WHERE vessel_name LIKE ?
     ''', (f"%{query}%",))
+    
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+# --- NOWOŚĆ: POBIERANIE WSZYSTKICH STATKÓW Z BAZY ---
+def get_all_vessels():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # ORDER BY id DESC sprawia, że najnowsze statki będą na samej górze listy
+    cursor.execute('''
+        SELECT timestamp, vessel_name, dwt, status, fee 
+        FROM canal_logs 
+        ORDER BY id DESC
+    ''')
     
     results = cursor.fetchall()
     conn.close()
