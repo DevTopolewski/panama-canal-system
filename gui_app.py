@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import messagebox
 from vessel_logic import check_vessel_status, calculate_vessel_fee
 # Importujemy wszystkie potrzebne narzędzia z naszego modułu bazy danych
-from database import add_vessel, get_vessel_stats, search_vessels, get_all_vessels
+from database import add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels
 
 # --- FUNKCJA AKTUALIZACJI DASHBOARDU (SQL VERSION) ---
 def update_dashboard():
@@ -17,7 +17,7 @@ def update_dashboard():
 def search_vessel():
     query = search_entry.get().strip()
     if not query:
-        messagebox.showwarning("Brak frazy", "Wpisz nazwę statku do wyszukania, Pedro!")
+        messagebox.showwarning("Brak frazy", "Wpisz nazwę statku do wyszukania!")
         return
     
     # Czyszczenie okna wyników
@@ -87,6 +87,23 @@ def show_all_vessels():
 
     search_results_box.config(state="disabled")
 
+# --- RESETOWANIE BAZY Z POTWIERDZENIEM ---
+def reset_database():
+    # Wyskakujące okienko z pytaniem Tak/Nie (True/False)
+    confirm = messagebox.askyesno("⚠️ POTWIERDZENIE", "Czy na pewno chcesz BEZPOWROTNIE usunąć całą historię statków?")
+
+    if confirm: # Jeśli użytkownik kliknął TAK
+        delete_all_vessels()     # Czyścimy bazę SQL
+        update_dashboard()       # Wyzerują nam się statystyki na dole
+
+        # Czyszczenie i zablokowanie okna wyszukiwarki
+        search_results_box.config(state="normal")
+        search_results_box.delete("1.0", tk.END)
+        search_results_box.insert(tk.END, "Baza danych została zresetowana.")
+        search_results_box.config(state="disabled")
+
+        messagebox.showinfo("Sukces", "Baza danych została pomyślnie wyczyszczona!")
+
 # --- TWORZENIE GŁÓWNEGO OKNA ---
 root = tk.Tk()
 root.title("Panama Canal System v2.4 (SQL)")
@@ -135,6 +152,10 @@ show_all_button.pack(pady=2)
 
 search_results_box = tk.Text(root, width=45, height=5, font=("Courier", 10), bg="#F9F9F9", fg="#000000", state="disabled")
 search_results_box.pack(pady=10, padx=15)
+
+# 🔥 TUTAJ WCISKASZ CZERWONY PRZYCISK RESETU:
+reset_button = tk.Button(root, text="Resetuj bazę danych ⚠️", font=("Arial", 11, "bold"), command=reset_database, fg="#cc0000", highlightbackground=BG_COLOR)
+reset_button.pack(pady=10)
 
 # --- SEKCJA 3: CZARNY PASEK STATYSTYK (DASHBOARD) ---
 stats_frame = tk.Frame(root, bg="#000000", height=40)
