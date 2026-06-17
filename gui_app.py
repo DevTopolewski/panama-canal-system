@@ -50,6 +50,9 @@ def process_ship():
         
     try:
         dwt = int(dwt_raw)
+        if dwt <= 0:
+            messagebox.showerror("Błąd danych", "Waga statku musi być liczbą większą niż 0!")
+            return
         status = check_vessel_status(dwt)
         fee = calculate_vessel_fee(dwt, status)
         
@@ -61,6 +64,9 @@ def process_ship():
             add_vessel(now_str, name, dwt, status, fee)
             # Odświeżamy licznik na dole ekranu automatycznie po dodaniu statku!
             update_dashboard()
+            # Czyszczenie pól po udanym zapisie!
+            name_entry.delete(0, tk.END)
+            dwt_entry.delete(0, tk.END)
         
         result_label.config(
             text=f"STATEK: {name}\nSTATUS: {status}\nOPŁATA: ${fee:,}", 
@@ -109,8 +115,8 @@ root = tk.Tk()
 root.title("Panama Canal System v2.4 (SQL)")
 root.geometry("400x700")
 
-BG_COLOR = "#FFFFFF"   
-TEXT_COLOR = "#000000" 
+BG_COLOR = "#003366"   
+TEXT_COLOR = "#FFFFFF" 
 root.configure(bg=BG_COLOR)
 
 # --- SEKCJA 1: ODPRAWA STATKÓW ---
@@ -128,9 +134,9 @@ dwt_entry = tk.Entry(root, width=25, font=("Arial", 12), bg="#F0F0F0", fg="#0000
 dwt_entry.pack(pady=5)
 
 calc_button = tk.Button(root, text="Odpraw statek 🚢", font=("Arial", 12, "bold"), command=process_ship, fg="#000000", highlightbackground=BG_COLOR)
-calc_button.pack(pady=15)
+calc_button.pack(pady=5)
 
-result_label = tk.Label(root, text="Wpisz dane i kliknij przycisk powyżej.", font=("Courier", 11, "bold"), bg=BG_COLOR, fg="#555555", justify="left")
+result_label = tk.Label(root, text="Wpisz dane i kliknij przycisk powyżej.", font=("Courier", 11, "bold"), bg=BG_COLOR, fg="#000000", justify="left")
 result_label.pack(pady=10)
 
 # --- LINIA PODZIAŁU SYSTEMU ---
@@ -150,7 +156,7 @@ search_button.pack(pady=5)
 show_all_button = tk.Button(root, text="Pokaż całą historię 📜", font=("Arial", 12, "bold"), command=show_all_vessels, fg="#000000", highlightbackground=BG_COLOR)
 show_all_button.pack(pady=2)
 
-search_results_box = tk.Text(root, width=45, height=5, font=("Courier", 10), bg="#F9F9F9", fg="#000000", state="disabled")
+search_results_box = tk.Text(root, width=45, height=5, font=("Courier", 10), bg="#77B1F3", fg="#000000", state="disabled")
 search_results_box.pack(pady=10, padx=15)
 
 # 🔥 TUTAJ WCISKASZ CZERWONY PRZYCISK RESETU:
