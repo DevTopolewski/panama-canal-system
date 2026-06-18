@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import ttk
 from vessel_logic import check_vessel_status, calculate_vessel_fee
 # Importujemy wszystkie potrzebne narzędzia z naszego modułu bazy danych
 from database import add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels
@@ -119,6 +120,25 @@ BG_COLOR = "#003366"
 TEXT_COLOR = "#FFFFFF" 
 root.configure(bg=BG_COLOR)
 
+# --- 🔥 NOWOŚĆ: KONFIGURACJA STYLU PRZYCISKÓW ---
+style = ttk.Style()
+style.theme_use('clam')  # Wymuszamy posłuszny motyw 'clam'
+
+# Tworzymy niestandardowy styl dla naszych przycisków
+style.configure(
+    "Custom.TButton",
+    background="#005588",      # Morski kolor przycisku
+    foreground="#FFFFFF",      # Biały tekst
+    font=("Arial", 11, "bold"),
+    borderwidth=0,
+    focuscolor="none"          # To zabija białe mruganie na Macu
+)
+
+# Definiujemy, co ma się stać, gdy najedziemy myszką (hover)
+style.map("Custom.TButton",
+    background=[("active", "#004477")]  # Ciemniejszy niebieski po najechaniu
+)
+
 # --- SEKCJA 1: ODPRAWA STATKÓW ---
 title = tk.Label(root, text="Kalkulator Kanału Panamskiego", font=("Arial", 14, "bold"), bg=BG_COLOR, fg=TEXT_COLOR)
 title.pack(pady=15)
@@ -133,8 +153,8 @@ dwt_label.pack(pady=2)
 dwt_entry = tk.Entry(root, width=25, font=("Arial", 12), bg="#F0F0F0", fg="#000000", insertbackground="black")
 dwt_entry.pack(pady=5)
 
-calc_button = tk.Button(root, text="Odpraw statek 🚢", font=("Arial", 12, "bold"), command=process_ship, fg="#000000", highlightbackground=BG_COLOR)
-calc_button.pack(pady=5)
+calc_button = ttk.Button(root, text="Odpraw statek 🚢", command=process_ship, style="Custom.TButton")
+calc_button.pack(pady=15)
 
 result_label = tk.Label(root, text="Wpisz dane i kliknij przycisk powyżej.", font=("Courier", 11, "bold"), bg=BG_COLOR, fg="#000000", justify="left")
 result_label.pack(pady=10)
@@ -150,17 +170,16 @@ search_title.pack(pady=5)
 search_entry = tk.Entry(root, width=25, font=("Arial", 12), bg="#F0F0F0", fg="#000000", insertbackground="black")
 search_entry.pack(pady=5)
 
-search_button = tk.Button(root, text="Szukaj w bazie 🔍", font=("Arial", 12, "bold"), command=search_vessel, fg="#000000", highlightbackground=BG_COLOR)
+search_button = ttk.Button(root, text="Szukaj w bazie 🔍", command=search_vessel, style="Custom.TButton")
 search_button.pack(pady=5)
 
-show_all_button = tk.Button(root, text="Pokaż całą historię 📜", font=("Arial", 12, "bold"), command=show_all_vessels, fg="#000000", highlightbackground=BG_COLOR)
+show_all_button = ttk.Button(root, text="Pokaż całą historię 📜", command=show_all_vessels, style="Custom.TButton")
 show_all_button.pack(pady=2)
 
 search_results_box = tk.Text(root, width=45, height=5, font=("Courier", 10), bg="#77B1F3", fg="#000000", state="disabled")
 search_results_box.pack(pady=10, padx=15)
 
-# 🔥 TUTAJ WCISKASZ CZERWONY PRZYCISK RESETU:
-reset_button = tk.Button(root, text="Resetuj bazę danych ⚠️", font=("Arial", 11, "bold"), command=reset_database, fg="#cc0000", highlightbackground=BG_COLOR)
+reset_button = ttk.Button(root, text="Resetuj bazę danych ⚠️", command=reset_database, style="Custom.TButton")
 reset_button.pack(pady=10)
 
 # --- SEKCJA 3: CZARNY PASEK STATYSTYK (DASHBOARD) ---
