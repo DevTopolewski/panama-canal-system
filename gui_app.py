@@ -3,9 +3,34 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
-from vessel_logic import check_vessel_status, calculate_vessel_fee
 # Importujemy wszystkie potrzebne narzędzia z naszego modułu bazy danych
-from database import add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels
+from database import init_db, add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels, db_load_prices, db_update_price
+
+# Ładujemy ceny z bazy danych
+init_db()
+prices = db_load_prices()
+
+# --- FUNKCJA LOGIKA KATEGORYZACJI ---
+def check_vessel_status(dwt: int) -> str:
+    if dwt <= 0:
+        return "ERROR_INVALID_VALUE"
+    if dwt > 250000:
+        return "REJECTED_OVERSIZE"
+    if dwt > 60000:
+        return "NEO-PANAMAX"
+    elif dwt > 40000:
+        return "PREMIUM"
+    elif dwt > 10000:
+        return "STANDARD"
+    else:
+        return "REJECTED"
+
+# --- FUNKCJA LOGIKA FINANSOWA ---
+def calculate_vessel_fee(dwt: int, category: str) -> int:
+    # Opłata bazowa zależna od kategorii
+    if category in ["REJECTED", "REJECTED_OVERSIZE", "ERROR_INVALID_VALUE"]:
+        return 0
+    return prices.get(category, 0)
 
 # --- FUNKCJA AKTUALIZACJI DASHBOARDU (SQL VERSION) ---
 def update_dashboard():
@@ -111,6 +136,29 @@ def reset_database():
 
         messagebox.showinfo("Sukces", "Baza danych została pomyślnie wyczyszczona!")
 
+def handle_save_rates():
+    global prices
+    try:
+        new_standard = int(rate_standard_entry.get())
+        new_premium = int(rate_premium_entry.get())
+        new_neo = int(rate_neo_entry.get())
+        
+        if new_standard <= 0 or new_premium <= 0 or new_neo <= 0:
+            messagebox.showerror("Błąd", "Ceny muszą być większe od 0!")
+            return
+            
+        # Zapisujemy wartości bezpośrednio do SQLite
+        db_update_price("STANDARD", new_standard)
+        db_update_price("PREMIUM", new_premium)
+        db_update_price("NEO-PANAMAX", new_neo)
+        
+        # Przeładowujemy słownik w locie z bazy danych
+        prices = db_load_prices()
+        
+        messagebox.showinfo("Sukces", "Cennik został zaktualizowany w bazie SQL!")
+    except ValueError:
+        messagebox.showerror("Błąd", "Wprowadź poprawne liczby całkowite!")
+
 # --- TWORZENIE GŁÓWNEGO OKNA ---
 root = tk.Tk()
 root.title("Panama Canal System v2.4 (SQL)")
@@ -139,7 +187,14 @@ style.map("Custom.TButton",
     background=[("active", "#004477")]  # Ciemniejszy niebieski po najechaniu
 )
 
-# --- SEKCJA 1: ODPRAWA STATKÓW ---
+# --- SEKCJA 1: CZARNY PASEK STATYSTYK (DASHBOARD) ---
+stats_frame = tk.Frame(root, bg="#000000", height=40)
+stats_frame.pack(fill="x", side="top")
+
+stats_label = tk.Label(stats_frame, text="Ładowanie...", font=("Arial", 11, "bold"), bg="#000000", fg="#FFFFFF")
+stats_label.pack(pady=10)
+
+# --- SEKCJA 2: ODPRAWA STATKÓW ---
 title = tk.Label(root, text="Kalkulator Kanału Panamskiego", font=("Arial", 14, "bold"), bg=BG_COLOR, fg=TEXT_COLOR)
 title.pack(pady=15)
 
@@ -160,10 +215,10 @@ result_label = tk.Label(root, text="Wpisz dane i kliknij przycisk powyżej.", fo
 result_label.pack(pady=10)
 
 # --- LINIA PODZIAŁU SYSTEMU ---
-separator = tk.Frame(root, height=2, bd=1, relief="sunken", bg="#CCCCCC")
+separator = tk.Frame(root, height=2, bd=1, relief="sunken", bg="#000000")
 separator.pack(fill="x", padx=20, pady=10)
 
-# --- SEKCJA 2: WYSZUKIWARKA LOGÓW ---
+# --- SEKCJA 3: WYSZUKIWARKA LOGÓW ---
 search_title = tk.Label(root, text="Wyszukiwarka Logów SQL", font=("Arial", 12, "bold"), bg=BG_COLOR, fg=TEXT_COLOR)
 search_title.pack(pady=5)
 
@@ -176,18 +231,44 @@ search_button.pack(pady=5)
 show_all_button = ttk.Button(root, text="Pokaż całą historię 📜", command=show_all_vessels, style="Custom.TButton")
 show_all_button.pack(pady=2)
 
-search_results_box = tk.Text(root, width=45, height=5, font=("Courier", 10), bg="#77B1F3", fg="#000000", state="disabled")
+search_results_box = tk.Text(root, width=45, height=5, font=("Courier", 10), bg="#F0F0F0", fg="#000000", state="disabled")
 search_results_box.pack(pady=10, padx=15)
 
 reset_button = ttk.Button(root, text="Resetuj bazę danych ⚠️", command=reset_database, style="Custom.TButton")
 reset_button.pack(pady=10)
 
-# --- SEKCJA 3: CZARNY PASEK STATYSTYK (DASHBOARD) ---
-stats_frame = tk.Frame(root, bg="#000000", height=40)
-stats_frame.pack(fill="x", side="bottom")
+# --- LINIA PODZIAŁU SYSTEMU ---
+separator2 = tk.Frame(root, height=2, bd=1, relief="sunken", bg="#000000")
+separator2.pack(fill="x", padx=20, pady=10)
 
-stats_label = tk.Label(stats_frame, text="Ładowanie...", font=("Arial", 11, "bold"), bg="#000000", fg="#FFFFFF")
-stats_label.pack(pady=10)
+# --- SEKCJA 4: KONFIGURACJA STAWEK ---
+rates_label = tk.Label(root, text="Konfiguracja stawek SQL ($)", font=("Arial", 11, "bold"), bg=BG_COLOR, fg=TEXT_COLOR)
+rates_label.pack(pady=5)
+
+rates_frame = tk.Frame(root, bg=BG_COLOR)
+rates_frame.pack(pady=5)
+
+# Pole STANDARD
+tk.Label(rates_frame, text="Std:", bg=BG_COLOR, fg=TEXT_COLOR, font=("Arial", 10, "bold")).grid(row=0, column=0, padx=2)
+rate_standard_entry = tk.Entry(rates_frame, width=6, font=("Arial", 10))
+rate_standard_entry.insert(0, str(prices.get("STANDARD", 5000)))
+rate_standard_entry.grid(row=0, column=1, padx=4)
+
+# Pole PREMIUM
+tk.Label(rates_frame, text="Prem:", bg=BG_COLOR, fg=TEXT_COLOR, font=("Arial", 10, "bold")).grid(row=0, column=2, padx=2)
+rate_premium_entry = tk.Entry(rates_frame, width=6, font=("Arial", 10))
+rate_premium_entry.insert(0, str(prices.get("PREMIUM", 12000)))
+rate_premium_entry.grid(row=0, column=3, padx=4)
+
+# Pole NEO-PANAMAX
+tk.Label(rates_frame, text="Neo:", bg=BG_COLOR, fg=TEXT_COLOR, font=("Arial", 10, "bold")).grid(row=0, column=4, padx=2)
+rate_neo_entry = tk.Entry(rates_frame, width=6, font=("Arial", 10))
+rate_neo_entry.insert(0, str(prices.get("NEO-PANAMAX", 25000)))
+rate_neo_entry.grid(row=0, column=5, padx=4)
+
+# Przycisk zapisu (ttk)
+save_rates_button = ttk.Button(root, text="Zapisz stawki w SQL 💾", command=handle_save_rates, style="Custom.TButton")
+save_rates_button.pack(pady=5)
 
 # Odpalamy pierwsze wyliczenie statystyk z bazy danych na starcie!
 update_dashboard()

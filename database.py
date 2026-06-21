@@ -7,6 +7,8 @@ DB_PATH = os.path.join(BASE_DIR, "canal_management.db")
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+
+    # 1. Tabela historii statków:
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS canal_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,6 +19,25 @@ def init_db():
             fee INTEGER NOT NULL
         )
     ''')
+
+    # 2. Tabela cennika:
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS vessel_rates (
+            category TEXT PRIMARY KEY,
+            price INTEGER NOT NULL
+        )
+    """)
+    
+    # 3. Domyślne stawki, jeśli tabela jest nowa/pusta:
+    cursor.execute("SELECT COUNT(*) FROM vessel_rates")
+    if cursor.fetchone()[0] == 0:
+        default_rates = [
+            ("STANDARD", 5000),
+            ("PREMIUM", 12000),
+            ("NEO-PANAMAX", 25000)
+        ]
+        cursor.executemany("INSERT INTO vessel_rates (category, price) VALUES (?, ?)", default_rates)
+    
     conn.commit()
     conn.close()
 
@@ -93,6 +114,27 @@ def delete_all_vessels():
     conn.commit()
     conn.close()
     print("Baza danych: Wszystkie rekordy zostały usunięte!")
+
+# --- FUNKCJE DO OBSŁUGI CENNIKA W BAZIE ---
+
+def db_load_prices():
+    """Pobiera wszystkie stawki z bazy i zwraca je jako słownik."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT category, price FROM vessel_rates")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    # Zamieniamy listę z bazy na słownik, np. {"STANDARD": 5000, ...}
+    return {row[0]: row[1] for row in rows}
+
+def db_update_price(category, new_price):
+    """Aktualizuje cenę dla konkretnej kategorii w bazie danych."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE vessel_rates SET price = ? WHERE category = ?", (new_price, category))
+    conn.commit()
+    conn.close()
 
 if __name__ == "__main__":
     init_db()
