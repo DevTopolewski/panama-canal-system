@@ -159,10 +159,18 @@ def handle_save_rates():
     except ValueError:
         messagebox.showerror("Błąd", "Wprowadź poprawne liczby całkowite!")
 
+def update_clock():
+    # Pobieramy aktualną datę i czas w ładnym formacie RRRR-MM-DD HH:MM:SS
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Aktualizujemy tekst w naszym labelu
+    time_label.config(text=f"{current_time}")
+    # 🔥 MAGIA: prosimy Tkintera, żeby odpalił tę funkcję ponownie za 1 sekundę
+    root.after(1000, update_clock)
+
 # --- TWORZENIE GŁÓWNEGO OKNA ---
 root = tk.Tk()
 root.title("Panama Canal System v2.4 (SQL)")
-root.geometry("400x700")
+root.geometry("400x725")
 
 BG_COLOR = "#003366"   
 TEXT_COLOR = "#FFFFFF" 
@@ -194,7 +202,19 @@ stats_frame.pack(fill="x", side="top")
 stats_label = tk.Label(stats_frame, text="Ładowanie...", font=("Arial", 11, "bold"), bg="#000000", fg="#FFFFFF")
 stats_label.pack(pady=10)
 
-# --- SEKCJA 2: ODPRAWA STATKÓW ---
+# --- SEKCJA 2: DYNAMICZNY ZEGAR SYSTEMOWY ---
+# Tworzymy małą ramkę pod czarnym paskiem
+time_frame = tk.Frame(root, bg=BG_COLOR)
+# side="top" sprawi, że wskoczy idealnie pod czarny pasek statystyk
+time_frame.pack(fill="x", side="top", pady=5)
+
+time_label = tk.Label(time_frame, text="", font=("Arial", 10, "bold"), bg=BG_COLOR, fg="#555555")
+time_label.pack()
+
+# Odpalamy pierwsze odświeżenie zegara
+update_clock()
+
+# --- SEKCJA 3: ODPRAWA STATKÓW ---
 title = tk.Label(root, text="Kalkulator Kanału Panamskiego", font=("Arial", 14, "bold"), bg=BG_COLOR, fg=TEXT_COLOR)
 title.pack(pady=15)
 
@@ -218,7 +238,7 @@ result_label.pack(pady=10)
 separator = tk.Frame(root, height=2, bd=1, relief="sunken", bg="#000000")
 separator.pack(fill="x", padx=20, pady=10)
 
-# --- SEKCJA 3: WYSZUKIWARKA LOGÓW ---
+# --- SEKCJA 4: WYSZUKIWARKA LOGÓW ---
 search_title = tk.Label(root, text="Wyszukiwarka Logów SQL", font=("Arial", 12, "bold"), bg=BG_COLOR, fg=TEXT_COLOR)
 search_title.pack(pady=5)
 
