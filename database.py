@@ -1,4 +1,5 @@
 import sqlite3
+import csv
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -135,6 +136,38 @@ def db_update_price(category, new_price):
     cursor.execute("UPDATE vessel_rates SET price = ? WHERE category = ?", (new_price, category))
     conn.commit()
     conn.close()
+
+# --- EXPORT HISTORII Z BAZY DANYCH DO PLIKU CSV ---
+
+def export_to_csv():
+    """Pobiera wszystkie dane z tabeli canal_logs i zapisuje je do pliku raportu CSV."""
+    # Definiujemy ścieżkę do pliku raportu – powstanie w tym samym folderze co baza
+    report_path = os.path.join(BASE_DIR, "canal_report.csv")
+    
+    # 1. Łączymy się z bazą danych
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # 2. Wyciągamy WSZYSTKIE kolumny z tabeli historii, sortując od najnowszych
+    cursor.execute("SELECT id, timestamp, vessel_name, dwt, status, fee FROM canal_logs ORDER BY id DESC")
+    rows = cursor.fetchall()
+    
+    # 3. Otwieramy plik CSV do zapisu (w trybie 'w' - write, z kodowaniem utf-8)
+    # newline='' zapobiega powstawaniu pustych linii między wierszami w niektórych systemach
+    with open(report_path, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        
+        # 4. Zapisujemy pierwszy wiersz – nagłówki kolumn (będą widoczne w Excelu)
+        writer.writerow(["ID Odprawy", "Data i Czas", "Nazwa Statku", "Waga (DWT)", "Status", "Opłata ($)"])
+        
+        # 5. Zapisujemy wszystkie wyciągnięte z bazy wiersze
+        writer.writerows(rows)
+    
+    # 6. Zamykamy połączenie z bazą
+    conn.close()
+    
+    # Zwracamy ścieżkę do pliku, żeby GUI mogło wyświetlić użytkownikowi komunikat sukcesu
+    return report_path
 
 if __name__ == "__main__":
     init_db()

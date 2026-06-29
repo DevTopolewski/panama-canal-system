@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 # Importujemy wszystkie potrzebne narzędzia z naszego modułu bazy danych
-from database import init_db, add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels, db_load_prices, db_update_price
+from database import init_db, add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels, db_load_prices, db_update_price, export_to_csv
 
 # Ładujemy ceny z bazy danych
 init_db()
@@ -63,7 +63,6 @@ def search_vessel():
         search_results_box.insert(tk.END, f"Nie znaleziono statku o nazwie: '{query}'")
         
     search_results_box.config(state="disabled")
-
 
 # --- FUNKCJA OBLICZAJĄCA ---
 def process_ship():
@@ -167,6 +166,17 @@ def update_clock():
     # 🔥 MAGIA: prosimy Tkintera, żeby odpalił tę funkcję ponownie za 1 sekundę
     root.after(1000, update_clock)
 
+def trigger_export():
+    try:
+        report_file = export_to_csv()
+        messagebox.showinfo(
+            "Raport Wygenerowany", 
+            f"🚀 Sukces!\n\nStatystyki Kanału zostały zapisane do pliku Excel/CSV.\n\nLokalizacja:\n{report_file}"
+        )
+    except Exception as e:
+        # W razie jakiegokolwiek problemu program nie skraszuje, tylko pokaże błąd
+        messagebox.showerror("Błąd Eksportu", f"Coś poszło nie tak podczas zapisu pliku:\n{e}")
+
 # --- TWORZENIE GŁÓWNEGO OKNA ---
 root = tk.Tk()
 root.title("Panama Canal System v2.4 (SQL)")
@@ -257,9 +267,13 @@ search_results_box.pack(pady=10, padx=15)
 reset_button = ttk.Button(root, text="Resetuj bazę danych ⚠️", command=reset_database, style="Custom.TButton")
 reset_button.pack(pady=10)
 
+# --- SEKCJA: EKSPORT RAPORTÓW BIZNESOWYCH ---
+export_button = ttk.Button(root, text="Generuj Raport Operacyjny (CSV) 📥", command=trigger_export, style="Custom.TButton")
+export_button.pack(pady=10)
+
 # --- LINIA PODZIAŁU SYSTEMU ---
-separator2 = tk.Frame(root, height=2, bd=1, relief="sunken", bg="#000000")
-separator2.pack(fill="x", padx=20, pady=10)
+separator = tk.Frame(root, height=2, bd=1, relief="sunken", bg="#000000")
+separator.pack(fill="x", padx=20, pady=10)
 
 # --- SEKCJA 4: KONFIGURACJA STAWEK ---
 rates_label = tk.Label(root, text="Konfiguracja stawek SQL ($)", font=("Arial", 11, "bold"), bg=BG_COLOR, fg=TEXT_COLOR)
