@@ -3,6 +3,8 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
+import urllib.request
+import json
 # Importujemy wszystkie potrzebne narzędzia z naszego modułu bazy danych
 from database import init_db, add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels, db_load_prices, db_update_price, export_to_csv
 
@@ -166,6 +168,16 @@ def update_clock():
     # 🔥 MAGIA: prosimy Tkintera, żeby odpalił tę funkcję ponownie za 1 sekundę
     root.after(1000, update_clock)
 
+def download_rate_usd():
+    url = "http://api.nbp.pl/api/exchangerates/rates/a/usd/?format=json"
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode())
+            return data['rates'][0]['mid']
+    except Exception:
+        return None
+
 def trigger_export():
     try:
         report_file = export_to_csv()
@@ -180,7 +192,7 @@ def trigger_export():
 # --- TWORZENIE GŁÓWNEGO OKNA ---
 root = tk.Tk()
 root.title("Panama Canal System v2.4 (SQL)")
-root.geometry("400x725")
+root.geometry("400x800")
 
 BG_COLOR = "#003366"   
 TEXT_COLOR = "#FFFFFF" 
@@ -221,8 +233,19 @@ time_frame.pack(fill="x", side="top", pady=5)
 time_label = tk.Label(time_frame, text="", font=("Arial", 10, "bold"), bg=BG_COLOR, fg="#555555")
 time_label.pack()
 
+# 2. NOWOŚĆ: Napis z kursem USD z API NBP
+usd_label = tk.Label(time_frame, text="💵 Pobieranie kursu USD...", font=("Arial", 9, "italic"), bg=BG_COLOR, fg="#2980b9")
+usd_label.pack(pady=(2, 0))
+
 # Odpalamy pierwsze odświeżenie zegara
 update_clock()
+
+# 🚀 POBRANIE KURSU Z API PRZY STARCIE:
+aktualny_kurs = download_rate_usd()
+if aktualny_kurs:
+    usd_label.config(text=f"💵 Kurs USD (NBP): {aktualny_kurs} PLN", font=("Arial", 9, "bold"), fg="#27ae60")
+else:
+    usd_label.config(text="💵 Kurs USD: Brak połączenia z siecią", fg="#c0392b")
 
 # --- SEKCJA 3: ODPRAWA STATKÓW ---
 title = tk.Label(root, text="Kalkulator Kanału Panamskiego", font=("Arial", 14, "bold"), bg=BG_COLOR, fg=TEXT_COLOR)
