@@ -6,7 +6,7 @@ from tkinter import ttk
 import urllib.request
 import json
 # Importujemy wszystkie potrzebne narzędzia z naszego modułu bazy danych
-from database import init_db, add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels, db_load_prices, db_update_price, export_to_csv
+from database import init_db, add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels, db_load_prices, db_update_price, export_to_csv, delete_last_entry
 
 # Ładujemy ceny z bazy danych
 init_db()
@@ -103,6 +103,23 @@ def process_ship():
     except ValueError:
         messagebox.showerror("Błąd wagi", "DWT musi być liczbą całkowitą!")
 
+# --- USUNIĘCIE OSTATNIO DODANEJ JENOSTKI ---
+
+def undo_last_ship():
+    # Pytamy użytkownika, czy na pewno chce usunąć dane (ochrona przed przypadkowym kliknięciem)
+    confirm = messagebox.askyesno("Potwierdzenie", "Czy na pewno chcesz usunąć OSTATNIO dodany statek z bazy?")
+    
+    if confirm:
+        # Zakładam, że masz zaimportowany moduł bazy jako 'database'
+        success = delete_last_entry()
+        
+        if success:
+            # Jeśli usunięto, odświeżamy czarny pasek na górze!
+            update_dashboard()
+            messagebox.showinfo("Sukces", "Ostatni statek został pomyślnie usunięty z systemu.")
+        else:
+            messagebox.showwarning("Brak danych", "Baza jest pusta, nie ma czego usunąć!")
+
 # --- WYŚWIETLANIE CAŁEJ HISTORII ---
 def show_all_vessels():
     search_results_box.config(state="normal")
@@ -192,7 +209,7 @@ def trigger_export():
 # --- TWORZENIE GŁÓWNEGO OKNA ---
 root = tk.Tk()
 root.title("Panama Canal System v2.4 (SQL)")
-root.geometry("400x800")
+root.geometry("400x850")
 
 BG_COLOR = "#003366"   
 TEXT_COLOR = "#FFFFFF" 
@@ -266,6 +283,9 @@ calc_button.pack(pady=15)
 
 result_label = tk.Label(root, text="Wpisz dane i kliknij przycisk powyżej.", font=("Courier", 11, "bold"), bg=BG_COLOR, fg="#000000", justify="left")
 result_label.pack(pady=10)
+
+undo_button = ttk.Button(root, text="Cofnij Ostatnio Dodany Statek ↩️", command=undo_last_ship, style="Custom.TButton")
+undo_button.pack(pady=15)
 
 # --- LINIA PODZIAŁU SYSTEMU ---
 separator = tk.Frame(root, height=2, bd=1, relief="sunken", bg="#000000")

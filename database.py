@@ -169,5 +169,27 @@ def export_to_csv():
     # Zwracamy ścieżkę do pliku, żeby GUI mogło wyświetlić użytkownikowi komunikat sukcesu
     return report_path
 
+# --- FUNKCJA, KTÓRA PYTA BAZE O NAJWYŻSZE ID I USUWA DOKŁADNIE TEN WIERSZ ---
+
+def delete_last_entry():
+    """Usuwa najnowszy wpis z tabeli canal_logs i zwraca True, jeśli się udało."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Najpierw sprawdzamy, czy w ogóle jest co usunąć
+    cursor.execute("SELECT MAX(id) FROM canal_logs")
+    last_id = cursor.fetchone()[0]
+    
+    if last_id is None:
+        conn.close()
+        return False  # Baza jest pusta
+        
+    # Usuwamy wiersz z najwyższym ID
+    cursor.execute("DELETE FROM canal_logs WHERE id = ?", (last_id,))
+    conn.commit()
+    conn.close()
+    
+    return True
+
 if __name__ == "__main__":
     init_db()
