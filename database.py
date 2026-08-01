@@ -191,5 +191,19 @@ def delete_last_entry():
     
     return True
 
+# --- FUNKCJA SUMUJĄCA OPŁATY POSZCZEGÓLNYCH STATUSÓW ---
+
+def get_stats_by_status():
+    """Zwraca zsumowane zarobki z rozbiciem na poszczególne statusy statków."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Zapytanie SQL: Daj mi status oraz SUMĘ opłat, grupując wyniki po statusie
+    cursor.execute("SELECT status, SUM(fee) FROM canal_logs GROUP BY status")
+    data = cursor.fetchall() # Zwraca listę krotek, np. [('STANDARD', 15000), ('PREMIUM', 24000)]
+    
+    conn.close()
+    return data
+
 if __name__ == "__main__":
     init_db()

@@ -4,9 +4,10 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 import urllib.request
+import matplotlib.pyplot as plt
 import json
 # Importujemy wszystkie potrzebne narzędzia z naszego modułu bazy danych
-from database import init_db, add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels, db_load_prices, db_update_price, export_to_csv, delete_last_entry
+from database import init_db, add_vessel, get_vessel_stats, search_vessels, get_all_vessels, delete_all_vessels, db_load_prices, db_update_price, export_to_csv, delete_last_entry, get_stats_by_status
 
 # Ładujemy ceny z bazy danych
 init_db()
@@ -33,6 +34,41 @@ def calculate_vessel_fee(dwt: int, category: str) -> int:
     if category in ["REJECTED", "REJECTED_OVERSIZE", "ERROR_INVALID_VALUE"]:
         return 0
     return prices.get(category, 0)
+
+# --- FUNKCJA GENERUJĄCA WYKRES STATYSTYK
+def show_analytics_chart():
+    # Pobieramy zagregowane dane z bazy
+    stats = get_stats_by_status()
+    
+    if not stats:
+        messagebox.showwarning("Brak danych", "Baza danych jest pusta! Dodaj najpierw jakieś statki.")
+        return
+
+    # Rozdzielamy wyniki na dwie osobne listy: statusy i sumy opłat
+    statuses = [row[0] for row in stats]
+    fees = [row[1] for row in stats]
+
+    # Tworzymy nowe okno wykresu
+    plt.figure(figsize=(7, 5))
+    
+    # Rysujemy wykres słupkowy z ładnymi kolorami
+    colors = ['#2ecc71', '#3498db', '#e74c3c', '#f1c40f']
+    bars = plt.bar(statuses, fees, color=colors[:len(statuses)])
+    
+    # Tytuł i opisy osi
+    plt.title("Łączne przychody wg statusu statku ($)", fontsize=12, fontweight='bold')
+    plt.xlabel("Status statku", fontsize=10)
+    plt.ylabel("Suma opłat ($)", fontsize=10)
+    plt.grid(axis='y', linestyle='--', alpha=0.5) # Delikatna siatka pomocnicza
+
+    # Dodajemy wartości nad każdym słupkiem
+    for bar in bars:
+        yval = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2.0, yval, f"${yval:,}", ha='center', va='bottom', fontweight='bold')
+
+    # Wyświetlamy okno z wykresem
+    plt.tight_layout()
+    plt.show()
 
 # --- FUNKCJA AKTUALIZACJI DASHBOARDU (SQL VERSION) ---
 def update_dashboard():
@@ -284,8 +320,24 @@ calc_button.pack(pady=15)
 result_label = tk.Label(root, text="Wpisz dane i kliknij przycisk powyżej.", font=("Courier", 11, "bold"), bg=BG_COLOR, fg="#000000", justify="left")
 result_label.pack(pady=10)
 
-undo_button = ttk.Button(root, text="Cofnij Ostatnio Dodany Statek ↩️", command=undo_last_ship, style="Custom.TButton")
-undo_button.pack(pady=15)
+action_buttons_frame = tk.Frame(root, bg=BG_COLOR)
+action_buttons_frame.pack(pady=15)
+
+undo_button = ttk.Button(
+    action_buttons_frame, 
+    text="Cofnij Ostatnio Dodany Statek ↩️", 
+    command=undo_last_ship, 
+    style="Custom.TButton"
+)
+undo_button.pack(side="left", padx=10) 
+
+chart_button = ttk.Button(
+    action_buttons_frame, 
+    text="Generuj Wykres Analityczny 📊", 
+    command=show_analytics_chart, 
+    style="Custom.TButton"
+)
+chart_button.pack(side="left", padx=10)
 
 # --- LINIA PODZIAŁU SYSTEMU ---
 separator = tk.Frame(root, height=2, bd=1, relief="sunken", bg="#000000")
