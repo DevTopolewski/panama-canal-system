@@ -1,4 +1,5 @@
 import os
+import hashlib
 from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox
@@ -12,6 +13,23 @@ from database import init_db, add_vessel, get_vessel_stats, search_vessels, get_
 # Ładujemy ceny z bazy danych
 init_db()
 prices = db_load_prices()
+
+# --- ZASZYFROWANE HASŁO (SHA-256 dla słowa 'admin123') ---
+SECRET_HASH = "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9"
+
+def check_login(event=None):
+    # Pobieramy wpisane hasło
+    password = password_entry.get()
+    
+    # Szyfrujemy wpisane hasło, żeby sprawdzić, czy jego "odcisk" pasuje do naszego
+    hashed_input = hashlib.sha256(password.encode()).hexdigest()
+    
+    if hashed_input == SECRET_HASH:
+        login_window.destroy()  # Zamykamy małe okno logowania
+        root.deiconify()        # Odkrywamy główne okno aplikacji portowej
+    else:
+        messagebox.showerror("Odmowa dostępu", "🛑 Błędne hasło! Spróbuj ponownie.")
+        password_entry.delete(0, tk.END)  # Czyścimy pole po błędzie
 
 # --- FUNKCJA LOGIKA KATEGORYZACJI ---
 def check_vessel_status(dwt: int) -> str:
@@ -269,6 +287,38 @@ style.configure(
 style.map("Custom.TButton",
     background=[("active", "#004477")]  # Ciemniejszy niebieski po najechaniu
 )
+
+# UKRYWAMY główne okno na starcie
+root.withdraw() 
+
+# --- TWORZYMY MAŁE OKNO LOGOWANIA ---
+login_window = tk.Toplevel(root)
+login_window.title("PCS v2.4")
+login_window.geometry("300x200")
+login_window.configure(bg="#003366")
+login_window.resizable(False, False)
+
+tk.Label(
+    login_window, 
+    text="LOGOWANIE 🔒", 
+    font=("Arial", 16, "bold"), 
+    bg="#003366", 
+    fg="white"
+).pack(pady=20)
+
+# Pole na hasło (parametr show="*" ukrywa wpisywane znaki)
+password_entry = tk.Entry(login_window, show="*", font=("Arial", 14), bg="#F0F0F0", fg="#000000", justify="center", width=15)
+password_entry.pack(pady=10)
+# Pozwala zalogować się wciskając klawisz ENTER
+password_entry.bind("<Return>", check_login) 
+
+login_button = ttk.Button(
+    login_window, 
+    text="Zaloguj 🔐", 
+    command=check_login, 
+    style="Custom.TButton"
+)
+login_button.pack(pady=15)
 
 # --- SEKCJA 1: CZARNY PASEK STATYSTYK (DASHBOARD) ---
 stats_frame = tk.Frame(root, bg="#000000", height=40)
