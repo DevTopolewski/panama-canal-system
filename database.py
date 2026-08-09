@@ -9,7 +9,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # 1. Tabela historii statków:
+    # 1. Vessel history table:
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS canal_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,7 +21,7 @@ def init_db():
         )
     ''')
 
-    # 2. Tabela cennika:
+    # 2. Rates table:
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS vessel_rates (
             category TEXT PRIMARY KEY,
@@ -29,7 +29,7 @@ def init_db():
         )
     """)
     
-    # 3. Domyślne stawki, jeśli tabela jest nowa/pusta:
+    # 3. Default rates if the table is new/empty:
     cursor.execute("SELECT COUNT(*) FROM vessel_rates")
     if cursor.fetchone()[0] == 0:
         default_rates = [
@@ -42,13 +42,13 @@ def init_db():
     conn.commit()
     conn.close()
 
-# --- DODAWANIE STATKU DO BAZY ---
+# --- ADDING A VESSEL TO THE DATABASE ---
 def add_vessel(timestamp: str, name: str, dwt: int, status: str, fee: int):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Używamy komendy SQL: INSERT INTO (Wstaw do tabeli)
-    # Znak zapytania (?) to bezpieczne "szufladki" na Twoje zmienne
+    # Using SQL command: INSERT INTO
+    # Question marks (?) are safe placeholders for your variables
     cursor.execute('''
         INSERT INTO canal_logs (timestamp, vessel_name, dwt, status, fee)
         VALUES (?, ?, ?, ?, ?)
@@ -56,14 +56,14 @@ def add_vessel(timestamp: str, name: str, dwt: int, status: str, fee: int):
     
     conn.commit()
     conn.close()
-    print(f"Baza danych: Pomyślnie zapisano statek {name}!")
+    print(f"Database: Successfully saved vessel {name}!")
 
-# --- WYCIĄGANIE STATYSTYK Z BAZY ---
+# --- FETCHING STATISTICS FROM DATABASE ---
 def get_vessel_stats():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # COUNT(*) liczy wiersze, SUM(fee) sumuje opłaty
+    # COUNT(*) counts rows, SUM(fee) calculates total fees
     cursor.execute("SELECT COUNT(*), SUM(fee) FROM canal_logs")
     result = cursor.fetchone()
     conn.close()
@@ -72,12 +72,12 @@ def get_vessel_stats():
     total_earnings = result[1] if result[1] else 0
     return total_ships, total_earnings
 
-# --- WYSZUKIWANIE W BAZIE ---
+# --- SEARCHING THE DATABASE ---
 def search_vessels(query: str):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # LIKE i znaki % pozwalają na szukanie fragmentu tekstu (np. "posej" znajdzie "Posejdon")
+    # LIKE and % signs allow for partial text search (e.g., "posei" finds "Poseidon")
     cursor.execute('''
         SELECT timestamp, vessel_name, dwt, status, fee 
         FROM canal_logs 
@@ -88,12 +88,12 @@ def search_vessels(query: str):
     conn.close()
     return results
 
-# --- POBIERANIE WSZYSTKICH STATKÓW Z BAZY ---
+# --- FETCHING ALL VESSELS FROM DATABASE ---
 def get_all_vessels():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # ORDER BY id DESC sprawia, że najnowsze statki będą na samej górze listy
+    # ORDER BY id DESC ensures the newest vessels are at the top of the list
     cursor.execute('''
         SELECT timestamp, vessel_name, dwt, status, fee 
         FROM canal_logs 
@@ -104,103 +104,103 @@ def get_all_vessels():
     conn.close()
     return results
 
-# --- CZYSZCZENIE CAŁEJ BAZY ---
+# --- CLEARING THE ENTIRE DATABASE ---
 def delete_all_vessels():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Komenda SQL, która czyści całą tabelę, ale zostawia jej strukturę
+    # SQL command that clears the entire table but keeps its structure
     cursor.execute("DELETE FROM canal_logs")
     
     conn.commit()
     conn.close()
-    print("Baza danych: Wszystkie rekordy zostały usunięte!")
+    print("Database: All records have been deleted!")
 
-# --- FUNKCJE DO OBSŁUGI CENNIKA W BAZIE ---
+# --- RATE MANAGEMENT FUNCTIONS IN DATABASE ---
 
 def db_load_prices():
-    """Pobiera wszystkie stawki z bazy i zwraca je jako słownik."""
+    """Fetches all rates from the database and returns them as a dictionary."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT category, price FROM vessel_rates")
     rows = cursor.fetchall()
     conn.close()
     
-    # Zamieniamy listę z bazy na słownik, np. {"STANDARD": 5000, ...}
+    # Convert the list from the database into a dictionary, e.g., {"STANDARD": 5000, ...}
     return {row[0]: row[1] for row in rows}
 
 def db_update_price(category, new_price):
-    """Aktualizuje cenę dla konkretnej kategorii w bazie danych."""
+    """Updates the price for a specific category in the database."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("UPDATE vessel_rates SET price = ? WHERE category = ?", (new_price, category))
     conn.commit()
     conn.close()
 
-# --- EXPORT HISTORII Z BAZY DANYCH DO PLIKU CSV ---
+# --- EXPORT DATABASE HISTORY TO CSV FILE ---
 
 def export_to_csv():
-    """Pobiera wszystkie dane z tabeli canal_logs i zapisuje je do pliku raportu CSV."""
-    # Definiujemy ścieżkę do pliku raportu – powstanie w tym samym folderze co baza
+    """Fetches all data from the canal_logs table and saves it to a CSV report file."""
+    # Define the path to the report file - it will be created in the same folder as the database
     report_path = os.path.join(BASE_DIR, "canal_report.csv")
     
-    # 1. Łączymy się z bazą danych
+    # 1. Connect to the database
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # 2. Wyciągamy WSZYSTKIE kolumny z tabeli historii, sortując od najnowszych
+    # 2. Fetch ALL columns from the history table, sorted by newest
     cursor.execute("SELECT id, timestamp, vessel_name, dwt, status, fee FROM canal_logs ORDER BY id DESC")
     rows = cursor.fetchall()
     
-    # 3. Otwieramy plik CSV do zapisu (w trybie 'w' - write, z kodowaniem utf-8)
-    # newline='' zapobiega powstawaniu pustych linii między wierszami w niektórych systemach
+    # 3. Open the CSV file for writing (in 'w' mode, with utf-8 encoding)
+    # newline='' prevents empty lines between rows on some systems
     with open(report_path, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         
-        # 4. Zapisujemy pierwszy wiersz – nagłówki kolumn (będą widoczne w Excelu)
-        writer.writerow(["ID Odprawy", "Data i Czas", "Nazwa Statku", "Waga (DWT)", "Status", "Opłata ($)"])
+        # 4. Write the first row - column headers (visible in Excel)
+        writer.writerow(["Transit ID", "Date and Time", "Vessel Name", "Displacement (DWT)", "Status", "Fee ($)"])
         
-        # 5. Zapisujemy wszystkie wyciągnięte z bazy wiersze
+        # 5. Write all rows fetched from the database
         writer.writerows(rows)
     
-    # 6. Zamykamy połączenie z bazą
+    # 6. Close the database connection
     conn.close()
     
-    # Zwracamy ścieżkę do pliku, żeby GUI mogło wyświetlić użytkownikowi komunikat sukcesu
+    # Return the file path so the GUI can show a success message to the user
     return report_path
 
-# --- FUNKCJA, KTÓRA PYTA BAZE O NAJWYŻSZE ID I USUWA DOKŁADNIE TEN WIERSZ ---
+# --- FUNCTION THAT ASKS DB FOR HIGHEST ID AND DELETES THAT EXACT ROW ---
 
 def delete_last_entry():
-    """Usuwa najnowszy wpis z tabeli canal_logs i zwraca True, jeśli się udało."""
+    """Deletes the newest entry from the canal_logs table and returns True if successful."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Najpierw sprawdzamy, czy w ogóle jest co usunąć
+    # First, check if there is anything to delete
     cursor.execute("SELECT MAX(id) FROM canal_logs")
     last_id = cursor.fetchone()[0]
     
     if last_id is None:
         conn.close()
-        return False  # Baza jest pusta
+        return False  # Database is empty
         
-    # Usuwamy wiersz z najwyższym ID
+    # Delete the row with the highest ID
     cursor.execute("DELETE FROM canal_logs WHERE id = ?", (last_id,))
     conn.commit()
     conn.close()
     
     return True
 
-# --- FUNKCJA SUMUJĄCA OPŁATY POSZCZEGÓLNYCH STATUSÓW ---
+# --- FUNCTION SUMMING FEES FOR INDIVIDUAL STATUSES ---
 
 def get_stats_by_status():
-    """Zwraca zsumowane zarobki z rozbiciem na poszczególne statusy statków."""
+    """Returns total earnings broken down by individual vessel statuses."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Zapytanie SQL: Daj mi status oraz SUMĘ opłat, grupując wyniki po statusie
+    # SQL query: Get the status and SUM of fees, grouping results by status
     cursor.execute("SELECT status, SUM(fee) FROM canal_logs GROUP BY status")
-    data = cursor.fetchall() # Zwraca listę krotek, np. [('STANDARD', 15000), ('PREMIUM', 24000)]
+    data = cursor.fetchall() # Returns a list of tuples, e.g., [('STANDARD', 15000), ('PREMIUM', 24000)]
     
     conn.close()
     return data
